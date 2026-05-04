@@ -1,0 +1,2 @@
+# auto-loc
+build website 
