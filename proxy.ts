@@ -15,7 +15,7 @@ function getSupabaseRuntimeConfig() {
   return { url, key };
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { url, key } = getSupabaseRuntimeConfig();
   const response = NextResponse.next({ request: { headers: request.headers } });
 
