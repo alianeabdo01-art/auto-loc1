@@ -261,12 +261,23 @@ export default function ReservationForm({ carId, pricePerDay, available }: Reser
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Duration</p>
             <p className="mt-1 text-lg font-semibold text-white">
-              {rentalDays > 0 ? `${rentalDays} day${rentalDays > 1 ? "s" : ""}` : "Select dates"}
+              {startDate && endDate ? (
+                <>
+                  {rentalDays} day{rentalDays > 1 ? "s" : ""} × {formatCurrency(pricePerDay)} = {formatCurrency(totalPrice)}
+                </>
+              ) : (
+                "Select dates to calculate"
+              )}
             </p>
+            {startDate && endDate && (
+              <p className="mt-2 text-xs text-slate-400">
+                {new Date(startDate).toLocaleDateString()} to {new Date(endDate).toLocaleDateString()}
+              </p>
+            )}
           </div>
           <div className="sm:text-right">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Estimated total</p>
-            <p className="mt-1 text-lg font-semibold text-white">{formatCurrency(totalPrice)}</p>
+            <p className="mt-1 text-2xl font-bold text-[#6c63ff]">{formatCurrency(totalPrice)}</p>
           </div>
         </div>
 

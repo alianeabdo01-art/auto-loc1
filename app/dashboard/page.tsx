@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { isAdminUser } from "@/lib/supabase/admin";
 import DashboardClient from "@/app/components/dashboard-client";
 import type { Reservation } from "@/lib/types";
 
@@ -16,6 +17,10 @@ export default async function DashboardPage() {
 
   if (!user) {
     redirect("/login");
+  }
+
+  if (isAdminUser(user)) {
+    redirect("/admin");
   }
 
   const { data: reservations, error: reservationsError } = await supabase

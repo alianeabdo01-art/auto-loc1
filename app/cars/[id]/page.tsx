@@ -18,7 +18,7 @@ import { notFound } from "next/navigation";
 
 import ReservationForm from "@/app/components/reservation-form";
 import { createClient } from "@/lib/supabase/server";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, resolveImageUrl } from "@/lib/utils";
 import type { Car } from "@/lib/types";
 import BackToCarsLink from "@/app/components/back-to-cars-link";
 
@@ -71,7 +71,7 @@ export default async function CarDetailsPage({ params }: CarPageProps) {
           <div className="relative h-72 w-full overflow-hidden rounded-2xl border border-[#ffffff0f] bg-[#16161f]">
           {car.image_url ? (
             <Image
-              src={car.image_url}
+              src={resolveImageUrl(car.image_url) ?? car.image_url}
               alt={`${car.brand} ${car.model}`}
               fill
               className="object-cover"

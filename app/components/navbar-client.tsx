@@ -10,6 +10,7 @@ import { useToast } from "./toast";
 
 type NavbarClientProps = {
   initialEmail: string | null;
+  initialIsAdmin: boolean;
 };
 
 const signedOutLinks = [
@@ -23,7 +24,11 @@ const signedInLinks = [
   { href: "/dashboard", label: "Dashboard" },
 ];
 
-export default function NavbarClient({ initialEmail }: NavbarClientProps) {
+const adminLinks = [
+  { href: "/admin", label: "🔧 Admin" },
+];
+
+export default function NavbarClient({ initialEmail, initialIsAdmin }: NavbarClientProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -32,7 +37,10 @@ export default function NavbarClient({ initialEmail }: NavbarClientProps) {
   const { showToast } = useToast();
   const isLoggedIn = Boolean(email ?? initialEmail);
 
-  const links = useMemo(() => (isLoggedIn ? signedInLinks : signedOutLinks), [isLoggedIn]);
+  const links = useMemo(() => {
+    if (!isLoggedIn) return signedOutLinks;
+    return initialIsAdmin ? adminLinks : signedInLinks;
+  }, [isLoggedIn, initialIsAdmin]);
 
   const handleSignOut = async () => {
     setSigningOut(true);

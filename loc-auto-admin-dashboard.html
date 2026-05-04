@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loc Auto Admin Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-strong: #f1f5f9;
+      --text: #102a43;
+      --text-muted: #64748b;
+      --sidebar: #0f1f35;
+      --sidebar-strong: #111f36;
+      --primary: #2563eb;
+      --primary-soft: #dbeafe;
+      --accent: #1e3a5f;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --border: rgba(15, 31, 53, 0.12);
+      --shadow: 0 24px 50px rgba(15, 31, 53, 0.08);
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+    html { font-family: 'Inter', system-ui, sans-serif; scroll-behavior: smooth; }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 28%), #e2e8f0; color: var(--text); }
+    button, input, select { font: inherit; }
+    img { max-width: 100%; display: block; }
+    .hidden { display: none !important; }
+
+    .app-shell { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+    .sidebar { background: var(--sidebar); color: #e2e8f0; padding: 32px 20px; display: flex; flex-direction: column; gap: 32px; position: relative; }
+    .sidebar:after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent 40%); }
+    .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+    .brand-mark { width: 42px; height: 42px; border-radius: 14px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); display: grid; place-items: center; font-size: 1.15rem; font-weight: 800; color: white; }
+    .brand-text h1 { margin: 0; font-size: 1.15rem; letter-spacing: 0.02em; }
+    .brand-text p { margin: 2px 0 0; font-size: 0.85rem; color: #cbd5e1; }
+    .nav-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+    .nav-item { border-radius: 18px; transition: background 180ms ease, transform 180ms ease; }
+    .nav-link { display: flex; align-items: center; gap: 14px; padding: 14px 16px; color: inherit; text-decoration: none; font-weight: 600; border-radius: inherit; }
+    .nav-link:hover, .nav-item.active .nav-link { background: rgba(255,255,255,0.08); }
+    .nav-icon { width: 20px; height: 20px; display: grid; place-items: center; }
+    .nav-label { font-size: 0.95rem; }
+    .sidebar-footer { margin-top: auto; display: grid; gap: 12px; }
+    .toggle-sidebar { width: 100%; border: none; background: rgba(255,255,255,0.08); color: #cbd5e1; padding: 14px 16px; border-radius: 18px; cursor: pointer; }
+
+    .main { background: #f8fafc; padding: 28px 32px; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+    .page-title { margin: 0; font-size: clamp(1.75rem, 2vw, 2.25rem); font-weight: 700; color: var(--accent); }
+    .page-meta { color: var(--text-muted); font-size: 0.95rem; max-width: 760px; line-height: 1.6; }
+    .top-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: #eff6ff; color: #1e3a8a; font-size: 0.82rem; font-weight: 600; }
+    .control-btn { border: none; background: var(--primary); color: white; padding: 12px 18px; border-radius: 16px; cursor: pointer; box-shadow: var(--shadow); transition: transform 160ms ease, background 160ms ease; }
+    .control-btn:hover { transform: translateY(-1px); background: #1d4ed8; }
+    .secondary-btn { border: 1px solid rgba(15, 31, 53, 0.12); background: white; color: var(--text); }
+
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+    .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); padding: 24px; }
+    .card-title { font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-muted); margin: 0 0 16px; }
+    .kpi-value { font-size: 2rem; font-weight: 700; margin: 0; color: var(--accent); }
+    .kpi-meta { color: var(--text-muted); margin: 10px 0 0; font-size: 0.92rem; }
+    .sparkline { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+    .spark { width: 38px; height: 5px; border-radius: 999px; background: #dbeafe; }
+    .spark.positive { background: #10b981; }
+    .spark.negative { background: #ef4444; }
+
+    .section-card { margin-top: 24px; }
+    .section-title { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    .section-title h2 { margin: 0; font-size: 1.15rem; font-weight: 700; }
+    .section-title span { font-size: 0.92rem; color: var(--text-muted); }
+    .table-wrapper { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 720px; }
+    th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    th { color: var(--text-muted); font-weight: 700; font-size: 0.88rem; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; user-select: none; }
+    tr:hover { background: #f1f5f9; }
+    .status-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 700; }
+    .status-available { background: #dcfce7; color: #166534; }
+    .status-rented { background: #e0f2fe; color: #075985; }
+    .status-maintenance { background: #fef3c7; color: #92400e; }
+    .status-reserved { background: #fee2e2; color: #991b1b; }
+    .status-pending { background: #f5f3ff; color: #4338ca; }
+    .status-confirmed { background: #dbeafe; color: #1d4ed8; }
+    .status-active { background: #dcfce7; color: #166534; }
+    .status-completed { background: #e0f2fe; color: #075985; }
+    .status-cancelled { background: #fee2e2; color: #991b1b; }
+    .avatar { width: 40px; height: 40px; border-radius: 14px; object-fit: cover; }
+    .pill { display: inline-flex; align-items: center; justify-content: center; padding: 10px 14px; border-radius: 999px; background: #eff6ff; color: #1e3a8a; font-weight: 600; font-size: 0.84rem; }
+
+    .filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+    .field { display: grid; gap: 8px; }
+    label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
+    input, select { width: 100%; border: 1px solid #cbd5e1; border-radius: 16px; background: white; padding: 12px 14px; color: var(--text); }
+    input:focus, select:focus { outline: 2px solid rgba(37, 99, 235, 0.18); }
+
+    .table-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+    .outline-btn { border: 1px solid rgba(15, 31, 53, 0.12); background: white; color: var(--text); }
+    .icon-btn { display: inline-flex; align-items: center; gap: 10px; padding: 12px 18px; border-radius: 16px; border: none; background: #e2e8f0; color: var(--text); cursor: pointer; }
+
+    .badge-pill { display: inline-flex; align-items: center; justify-content: center; padding: 8px 12px; border-radius: 999px; background: var(--surface-strong); color: var(--text); font-size: 0.82rem; }
+    .drawer, .modal, .toast, .overlay { position: fixed; left: 0; top: 0; right: 0; bottom: 0; }
+    .overlay { background: rgba(15, 23, 42, 0.5); z-index: 30; opacity: 0; pointer-events: none; transition: opacity 180ms ease; }
+    .overlay.show { opacity: 1; pointer-events: auto; }
+    .modal, .drawer { z-index: 40; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 180ms ease; }
+    .modal.show, .drawer.show { opacity: 1; pointer-events: auto; }
+    .modal-panel { width: min(720px, 100%); background: white; border-radius: 28px; box-shadow: var(--shadow); padding: 28px; position: relative; }
+    .drawer-panel { width: min(520px, 100%); height: 100%; background: white; border-radius: 0 28px 28px 0; box-shadow: var(--shadow); padding: 28px; overflow-y: auto; }
+    .close-btn { position: absolute; top: 18px; right: 18px; width: 40px; height: 40px; border: none; background: rgba(15, 23, 42, 0.06); border-radius: 12px; cursor: pointer; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .form-grid.full { grid-template-columns: 1fr; }
+    .form-group { display: grid; gap: 8px; }
+
+    .toast-container { position: fixed; right: 24px; bottom: 24px; display: grid; gap: 12px; z-index: 50; }
+    .toast { min-width: 280px; border-radius: 18px; color: white; padding: 16px 18px; display: grid; gap: 8px; box-shadow: var(--shadow); }
+    .toast.success { background: #10b981; }
+    .toast.error { background: #ef4444; }
+    .toast strong { display: block; font-weight: 800; }
+
+    .page-content { display: grid; gap: 24px; }
+    .progress-bar { height: 10px; border-radius: 999px; overflow: hidden; background: #e2e8f0; margin-top: 10px; }
+    .progress-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2563eb, #60a5fa); }
+    .legend-group { display: grid; gap: 12px; margin-top: 16px; }
+    .legend-item { display: flex; align-items: center; gap: 10px; font-size: 0.92rem; color: var(--text-muted); }
+    .legend-dot { width: 12px; height: 12px; border-radius: 999px; }
+
+    .calendar-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+    .calendar-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .calendar-grid { display:grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+    .calendar-day { background: var(--surface-strong); border: 1px solid #e2e8f0; border-radius: 18px; min-height: 94px; padding: 12px; display:flex; flex-direction:column; justify-content:space-between; transition: transform 160ms ease, border-color 160ms ease; }
+    .calendar-day:hover { transform: translateY(-2px); border-color: #c7d2fe; }
+    .calendar-day.disabled { background: #f8fafc; color: #94a3b8; opacity: 0.72; }
+    .calendar-day.has-event { border-color: #2563eb; background: rgba(37,99,235,0.08); }
+    .calendar-day .day-number { font-size: 0.95rem; font-weight: 700; margin-bottom: 10px; }
+    .calendar-day .event-pill { display:inline-flex; align-items:center; justify-content:center; padding: 6px 10px; border-radius: 999px; background: #2563eb; color:#fff; font-size:0.78rem; }
+    .calendar-footer { margin-top: 18px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .calendar-summary { color: var(--text-muted); font-size: 0.95rem; }
+
+    .small-card { background: var(--surface-strong); border-radius: 24px; padding: 20px; border: 1px solid var(--border); }
+    .empty-state { display: grid; place-items: center; min-height: 260px; border: 2px dashed rgba(15, 23, 42, 0.12); border-radius: 24px; background: #ffffff; text-align: center; color: var(--text-muted); }
+
+    @media (max-width: 1180px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .sidebar { position: sticky; top: 0; z-index: 20; }
+      .main { padding: 24px; }
+      .grid-3 { grid-template-columns: 1fr; }
+      .filters { grid-template-columns: 1fr; }
+      .page-header { flex-direction: column; align-items: flex-start; }
+      .section-title { flex-direction: column; align-items: flex-start; }
+      .table-wrapper { overflow-x: auto; }
+    }
+
+    @media (max-width: 760px) {
+      body { background: #f8fafc; }
+      .sidebar { padding: 18px 16px; gap: 24px; }
+      .brand { gap: 12px; }
+      .nav-link { padding: 12px 14px; }
+      .main { padding: 20px; }
+      .page-title { font-size: 1.75rem; }
+      .form-grid { grid-template-columns: 1fr; }
+      .table-wrapper table { min-width: 640px; }
+      .sidebar-footer { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Sidebar navigation">
+      <div class="brand">
+        <div class="brand-mark">LA</div>
+        <div class="brand-text">
+          <h1>Loc Auto</h1>
+          <p>Admin dashboard</p>
+        </div>
+      </div>
+      <nav>
+        <ul class="nav-list" id="navList">
+          <li class="nav-item active" data-view="dashboard"><a class="nav-link" href="#dashboard"><span class="nav-icon">🏠</span><span class="nav-label">Overview</span></a></li>
+          <li class="nav-item" data-view="fleet"><a class="nav-link" href="#fleet"><span class="nav-icon">🚘</span><span class="nav-label">Fleet</span></a></li>
+          <li class="nav-item" data-view="reservations"><a class="nav-link" href="#reservations"><span class="nav-icon">📅</span><span class="nav-label">Reservations</span></a></li>
+          <li class="nav-item" data-view="clients"><a class="nav-link" href="#clients"><span class="nav-icon">👥</span><span class="nav-label">Clients</span></a></li>
+          <li class="nav-item" data-view="payments"><a class="nav-link" href="#payments"><span class="nav-icon">💳</span><span class="nav-label">Payments</span></a></li>
+          <li class="nav-item" data-view="reports"><a class="nav-link" href="#reports"><span class="nav-icon">📊</span><span class="nav-label">Reports</span></a></li>
+          <li class="nav-item" data-view="settings"><a class="nav-link" href="#settings"><span class="nav-icon">⚙️</span><span class="nav-label">Settings</span></a></li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="toggle-sidebar" id="darkModeToggle">Toggle Dark Mode</button>
+        <div class="badge">SaaS dashboard ready</div>
+      </div>
+    </aside>
+    <main class="main">
+      <section class="page-content" id="dashboardPage">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Dashboard Overview</h1>
+            <p class="page-meta">Manage growth, reservations, fleet, and revenue from a single control center designed for admins and operations teams.</p>
+          </div>
+          <div class="top-controls">
+            <button class="control-btn" data-action="add-car">Add Car</button>
+            <button class="control-btn" data-action="new-reservation">New Reservation</button>
+            <button class="secondary-btn" data-action="generate-report">Generate Report</button>
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="card">
+            <p class="card-title">Total Cars</p>
+            <p class="kpi-value" id="totalCars">0</p>
+            <p class="kpi-meta">Total vehicles in the fleet across all categories.</p>
+          </div>
+          <div class="card">
+            <p class="card-title">Active Rentals</p>
+            <p class="kpi-value" id="activeRentals">0</p>
+            <div class="sparkline"><span class="spark positive"></span><span>+8.4% from last month</span></div>
+          </div>
+          <div class="card">
+            <p class="card-title">Revenue (MTD)</p>
+            <p class="kpi-value" id="monthlyRevenue">$0</p>
+            <div class="sparkline"><span class="spark positive"></span><span>+12.7% growth</span></div>
+          </div>
+          <div class="card">
+            <p class="card-title">Pending Returns</p>
+            <p class="kpi-value" id="pendingReturns">0</p>
+            <div class="sparkline"><span class="spark negative"></span><span>2 cars due today</span></div>
+          </div>
+          <div class="card" style="grid-column: span 2;">
+            <div class="section-title"><h2>Revenue Trend</h2><span>Last 30 days</span></div>
+            <canvas id="revenueChart" height="210"></canvas>
+          </div>
+          <div class="card" style="grid-column: span 1;">
+            <div class="section-title"><h2>Availability</h2><span>Category distribution</span></div>
+            <canvas id="availabilityChart" height="210"></canvas>
+            <div class="legend-group">
+              <div class="legend-item"><span class="legend-dot" style="background: #2563eb"></span> Available</div>
+              <div class="legend-item"><span class="legend-dot" style="background: #1e40af"></span> Rented</div>
+              <div class="legend-item"><span class="legend-dot" style="background: #f59e0b"></span> Reserved</div>
+              <div class="legend-item"><span class="legend-dot" style="background: #ef4444"></span> Maintenance</div>
+            </div>
+          </div>
+        </div>
+        <div class="card section-card">
+          <div class="section-title"><h2>Recent Reservations</h2><span>Last 5 bookings</span></div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Reservation</th><th>Client</th><th>Car</th><th>Period</th><th>Status</th><th>Total</th></tr></thead>
+              <tbody id="recentReservationsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="page-content hidden" id="fleetPage">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Fleet Management</h1>
+            <p class="page-meta">Track every vehicle, update status, and manage availability from one place.</p>
+          </div>
+          <div class="top-controls">
+            <button class="control-btn" data-action="add-car">Add Car</button>
+            <button class="outline-btn" data-action="export-csv">Export CSV</button>
+            <button class="outline-btn" data-bulk="maintenance">Mark Maintenance</button>
+          </div>
+        </div>
+        <div class="card section-card">
+          <div class="filters">
+            <div class="field"><label for="fleetCategory">Category</label><select id="fleetCategory"><option value="all">All Categories</option><option>Economy</option><option>SUV</option><option>Luxury</option><option>Van</option></select></div>
+            <div class="field"><label for="fleetStatus">Status</label><select id="fleetStatus"><option value="all">All Status</option><option>Available</option><option>Rented</option><option>Maintenance</option><option>Reserved</option></select></div>
+            <div class="field"><label for="fleetSearch">Search model / plate</label><input id="fleetSearch" type="search" placeholder="Search by model or plate"></div>
+          </div>
+          <div class="table-actions"><span class="badge-pill">15 cars loaded</span></div>
+          <div class="table-wrapper"><table><thead><tr><th data-sort="id">ID</th><th>Photo</th><th data-sort="model">Model</th><th data-sort="brand">Brand</th><th data-sort="year">Year</th><th>Category</th><th>Plate</th><th>Status</th><th data-sort="price">Price/Day</th><th>Actions</th></tr></thead><tbody id="fleetBody"></tbody></table></div>
+          <div class="table-actions"><button class="outline-btn" id="fleetPrev">Previous</button><button class="outline-btn" id="fleetNext">Next</button><span id="fleetPagination" style="color: var(--text-muted);"></span></div>
+        </div>
+      </section>
+
+      <section class="page-content hidden" id="reservationsPage">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Reservations Management</h1>
+            <p class="page-meta">Control bookings, monitor statuses, and schedule reservations with ease.</p>
+          </div>
+          <div class="top-controls">
+            <button class="control-btn" data-action="new-reservation">Create Reservation</button>
+            <button class="outline-btn" data-toggle="calendar">Calendar View</button>
+          </div>
+        </div>
+        <div class="card section-card">
+          <div class="filters">
+            <div class="field"><label for="resStatus">Status</label><select id="resStatus"><option value="all">All Statuses</option><option>Pending</option><option>Confirmed</option><option>Active</option><option>Completed</option><option>Cancelled</option></select></div>
+            <div class="field"><label for="resAgent">Agent</label><select id="resAgent"><option value="all">All Agents</option></select></div>
+            <div class="field"><label for="resSearch">Search client or car</label><input id="resSearch" type="search" placeholder="Search by client or car"></div>
+          </div>
+          <div class="table-actions"><span class="badge-pill">20 reservations</span></div>
+          <div class="table-wrapper"><table><thead><tr><th data-sort="id">Reservation ID</th><th>Client</th><th>Car</th><th>Duration</th><th data-sort="start">Start</th><th data-sort="end">End</th><th>Status</th><th>Total</th><th>Agent</th><th>Actions</th></tr></thead><tbody id="reservationsBody"></tbody></table></div>
+          <div class="table-actions"><button class="outline-btn" id="reservationsPrev">Previous</button><button class="outline-btn" id="reservationsNext">Next</button><span id="reservationsPagination" style="color: var(--text-muted);"></span></div>
+        </div>
+        <div class="card section-card" id="calendarCard">
+          <div class="section-title"><h2>Calendar overview</h2><span>Monthly schedule</span></div>
+          <div class="calendar-header">
+            <button class="outline-btn" id="calendarPrev">Previous</button>
+            <div class="calendar-title" id="calendarTitle">April 2024</div>
+            <button class="outline-btn" id="calendarNext">Next</button>
+          </div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+          <div class="calendar-footer">
+            <div class="calendar-summary" id="calendarSummary">Highlighted dates show active reservations and availability at a glance.</div>
+            <div class="legend-group" style="margin-top:0;display:flex;flex-wrap:wrap;gap:10px;">
+              <div class="legend-item"><span class="legend-dot" style="background:#2563eb"></span> Reservation</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#dbeafe;border:1px solid #2563eb"></span> Available</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page-content hidden" id="clientsPage">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Clients Management</h1>
+            <p class="page-meta">Review client profiles, rental history, and trusted customers at a glance.</p>
+          </div>
+          <div class="top-controls">
+            <button class="control-btn" data-action="add-client">Add Client</button>
+            <button class="outline-btn" data-action="export-client">Export List</button>
+          </div>
+        </div>
+        <div class="card section-card">
+          <div class="filters">
+            <div class="field"><label for="clientStatus">Status</label><select id="clientStatus"><option value="all">All Status</option><option>Active</option><option>VIP</option><option>Blacklisted</option></select></div>
+            <div class="field"><label for="clientSearch">Search</label><input id="clientSearch" type="search" placeholder="Search by name, email or ID"></div>
+            <div class="field"><label>&nbsp;</label><div style="height: 46px;"></div></div>
+          </div>
+          <div class="table-actions"><span class="badge-pill">25 clients</span></div>
+          <div class="table-wrapper"><table><thead><tr><th>Client</th><th>Phone</th><th>Email</th><th>ID Number</th><th>Total Rentals</th><th>Last Rental</th><th>Status</th><th>Actions</th></tr></thead><tbody id="clientsBody"></tbody></table></div>
+          <div class="table-actions"><button class="outline-btn" id="clientsPrev">Previous</button><button class="outline-btn" id="clientsNext">Next</button><span id="clientsPagination" style="color: var(--text-muted);"></span></div>
+        </div>
+      </section>
+
+      <section class="page-content hidden" id="paymentsPage">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Payments & Invoices</h1>
+            <p class="page-meta">Track revenue, invoices, and payment methods in one consolidated view.</p>
+          </div>
+          <div class="top-controls">
+            <button class="control-btn" data-action="export-pdf">Export PDF</button>
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="card small-card"><p class="card-title">Revenue Summary</p><h3 style="margin: 12px 0 0; font-size: 2rem;">$142,400</h3><p class="kpi-meta">Total income this quarter across all bookings.</p><div class="progress-bar"><div class="progress-fill" style="width: 76%;"></div></div></div>
+          <div class="card small-card"><p class="card-title">Paid Invoices</p><h3 style="margin: 12px 0 0; font-size: 2rem;">178</h3><p class="kpi-meta">Invoices collected this month.</p></div>
+          <div class="card small-card"><p class="card-title">Overdue</p><h3 style="margin: 12px 0 0; font-size: 2rem; color: var(--danger);">$4,320</h3><p class="kpi-meta">Outstanding invoices requiring follow up.</p></div>
+        </div>
+        <div class="card section-card">
+          <div class="section-title"><h2>Payment Method Breakdown</h2><span>Share by transaction type</span></div>
+          <canvas id="paymentChart" height="220"></canvas>
+        </div>
+        <div class="card section-card">
+          <div class="section-title"><h2>Invoices</h2><span>Recent payment activity</span></div>
+          <div class="table-wrapper"><table><thead><tr><th>Invoice #</th><th>Client</th><th>Car</th><th>Amount</th><th>Method</th><th>Date</th><th>Status</th></tr></thead><tbody id="invoicesBody"></tbody></table></div>
+        </div>
+      </section>
+
+      <section class="page-content hidden" id="reportsPage">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Reports & Analytics</h1>
+            <p class="page-meta">Visualize performance data, occupancy, and agent metrics for smarter operations.</p>
+          </div>
+          <div class="top-controls">
+            <button class="control-btn" data-action="export-report">Export Report</button>
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="card small-card"><p class="card-title">Monthly Growth</p><h3 style="margin: 12px 0 0; font-size: 2rem;">+13.5%</h3></div>
+          <div class="card small-card"><p class="card-title">Occupancy</p><h3 style="margin: 12px 0 0; font-size: 2rem;">82%</h3></div>
+          <div class="card small-card"><p class="card-title">Top Agent</p><h3 style="margin: 12px 0 0; font-size: 2rem;">Mia Turner</h3></div>
+        </div>
+        <div class="card section-card"><div class="section-title"><h2>Revenue by Period</h2><span>Quarterly view</span></div><canvas id="reportsChart" height="210"></canvas></div>
+        <div class="card section-card"><div class="section-title"><h2>Top 5 Rented Cars</h2><span>Most popular vehicles</span></div><canvas id="topCarsChart" height="240"></canvas></div>
+        <div class="card section-card"><div class="section-title"><h2>Agent Performance</h2><span>Bookings handled</span></div><div class="table-wrapper"><table><thead><tr><th>Agent</th><th>Bookings</th><th>Revenue</th><th>Rating</th></tr></thead><tbody id="agentsBody"></tbody></table></div></div>
+      </section>
+
+      <section class="page-content hidden" id="settingsPage">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Settings</h1>
+            <p class="page-meta">Configure company details, pricing rules, and user access in one place.</p>
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="card small-card"><p class="card-title">Company</p><p style="margin: 14px 0 0;">Loc Auto Rentals</p><p class="kpi-meta">Auto rental management system.</p></div>
+          <div class="card small-card"><p class="card-title">Notifications</p><p style="margin: 14px 0 0;">Email alerts enabled</p><p class="kpi-meta">Reservation and payment alerts active.</p></div>
+          <div class="card small-card"><p class="card-title">User Roles</p><p style="margin: 14px 0 0;">Admins, Managers, Agents</p><p class="kpi-meta">Permission control enabled.</p></div>
+        </div>
+        <div class="card section-card"><div class="section-title"><h2>Company Info</h2><span>Business details</span></div><div class="form-grid full"><div class="form-group"><label>Company Name</label><input type="text" value="Loc Auto Rentals" disabled></div><div class="form-group"><label>Address</label><input type="text" value="1488 Beacon Lane, San Diego, CA" disabled></div><div class="form-group"><label>Phone</label><input type="text" value="(619) 555-0192" disabled></div><div class="form-group"><label>Email</label><input type="email" value="ops@locauto.com" disabled></div></div></div>
+        <div class="card section-card"><div class="section-title"><h2>Pricing Rules</h2><span>Rate per category</span></div><div class="table-wrapper"><table><thead><tr><th>Category</th><th>Base Rate</th><th>Weekend</th><th>Luxury Tax</th></tr></thead><tbody><tr><td>Economy</td><td>$45</td><td>$55</td><td>—</td></tr><tr><td>SUV</td><td>$75</td><td>$90</td><td>—</td></tr><tr><td>Luxury</td><td>$120</td><td>$145</td><td>$35</td></tr><tr><td>Van</td><td>$90</td><td>$110</td><td>—</td></tr></tbody></table></div></div>
+        <div class="card section-card"><div class="section-title"><h2>Recent System Logs</h2><span>Last actions</span></div><div class="empty-state"><div><p style="font-size: 1.05rem; margin-bottom: 10px;">No system logs available</p><p>Logs will appear here once actions are performed in the dashboard.</p></div></div></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="overlay" id="pageOverlay"></div>
+  <div class="modal" id="modalDialog" aria-hidden="true">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="close-btn" id="modalClose" aria-label="Close modal">✕</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+  <div class="drawer" id="profileDrawer" aria-hidden="true">
+    <div class="drawer-panel"><button class="close-btn" id="drawerClose" aria-label="Close drawer">✕</button><div id="drawerContent"></div></div>
+  </div>
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    const state = {
+      activeView: 'dashboard',
+      darkMode: false,
+      fleetPage: { page: 1, perPage: 10, sortKey: 'id', sortDir: 'asc' },
+      reservationsPage: { page: 1, perPage: 10, sortKey: 'id', sortDir: 'asc' },
+      clientsPage: { page: 1, perPage: 10, sortKey: 'name', sortDir: 'asc' },
+      calendar: { currentMonth: new Date() }
+    };
+
+    const cars = [
+      { id: 101, model: 'Clio', brand: 'Renault', year: 2021, category: 'Economy', plate: 'LOC-3141', status: 'Available', price: 42, color: '#60a5fa' },
+      { id: 102, model: 'Corolla', brand: 'Toyota', year: 2022, category: 'Economy', plate: 'LOC-8742', status: 'Rented', price: 48, color: '#f97316' },
+      { id: 103, model: '208', brand: 'Peugeot', year: 2020, category: 'Economy', plate: 'LOC-1994', status: 'Maintenance', price: 39, color: '#22c55e' },
+      { id: 104, model: 'Model 3', brand: 'Tesla', year: 2024, category: 'Luxury', plate: 'LOC-4210', status: 'Reserved', price: 128, color: '#7c3aed' },
+      { id: 105, model: 'Grand Cherokee', brand: 'Jeep', year: 2023, category: 'SUV', plate: 'LOC-2301', status: 'Available', price: 92, color: '#0ea5e9' },
+      { id: 106, model: 'Camry', brand: 'Toyota', year: 2023, category: 'Economy', plate: 'LOC-6745', status: 'Rented', price: 55, color: '#2563eb' },
+      { id: 107, model: 'X5', brand: 'BMW', year: 2024, category: 'Luxury', plate: 'LOC-9907', status: 'Available', price: 145, color: '#1d4ed8' },
+      { id: 108, model: 'Civic', brand: 'Honda', year: 2022, category: 'Economy', plate: 'LOC-5023', status: 'Reserved', price: 50, color: '#38bdf8' },
+      { id: 109, model: 'Explorer', brand: 'Ford', year: 2023, category: 'SUV', plate: 'LOC-3312', status: 'Maintenance', price: 98, color: '#8b5cf6' },
+      { id: 110, model: 'A6', brand: 'Audi', year: 2024, category: 'Luxury', plate: 'LOC-7425', status: 'Available', price: 132, color: '#60a5fa' },
+      { id: 111, model: 'Sienna', brand: 'Toyota', year: 2021, category: 'Van', plate: 'LOC-8017', status: 'Rented', price: 88, color: '#475569' },
+      { id: 112, model: 'Q5', brand: 'Audi', year: 2023, category: 'Luxury', plate: 'LOC-2910', status: 'Available', price: 138, color: '#0ea5e9' },
+      { id: 113, model: 'Escape', brand: 'Ford', year: 2022, category: 'SUV', plate: 'LOC-6541', status: 'Reserved', price: 95, color: '#2563eb' },
+      { id: 114, model: 'Kona', brand: 'Hyundai', year: 2024, category: 'Economy', plate: 'LOC-1764', status: 'Available', price: 49, color: '#0284c7' },
+      { id: 115, model: 'Vito', brand: 'Mercedes', year: 2023, category: 'Van', plate: 'LOC-5392', status: 'Available', price: 102, color: '#4338ca' }
+    ];
+
+    const clients = [
+      { id: 'C-1001', name: 'Mia Turner', phone: '(619) 555-0165', email: 'mia.turner@locauto.com', idNumber: 'DL-332871', rentals: 18, lastRental: '2024-04-18', status: 'VIP', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1002', name: 'Ethan Brooks', phone: '(619) 555-0139', email: 'ethan.brooks@locauto.com', idNumber: 'DL-882341', rentals: 9, lastRental: '2024-04-21', status: 'Active', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1003', name: 'Sophia Reed', phone: '(619) 555-0188', email: 'sophia.reed@locauto.com', idNumber: 'DL-112457', rentals: 14, lastRental: '2024-04-17', status: 'Active', avatar: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1004', name: 'Noah Patel', phone: '(619) 555-0142', email: 'noah.patel@locauto.com', idNumber: 'DL-446710', rentals: 7, lastRental: '2024-04-10', status: 'Active', avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1005', name: 'Ava Morgan', phone: '(619) 555-0199', email: 'ava.morgan@locauto.com', idNumber: 'DL-551978', rentals: 21, lastRental: '2024-04-22', status: 'VIP', avatar: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1006', name: 'Liam Chen', phone: '(619) 555-0102', email: 'liam.chen@locauto.com', idNumber: 'DL-908432', rentals: 6, lastRental: '2024-04-12', status: 'Active', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1007', name: 'Emma Davis', phone: '(619) 555-0116', email: 'emma.davis@locauto.com', idNumber: 'DL-331112', rentals: 13, lastRental: '2024-04-15', status: 'Active', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1008', name: 'Noah Carter', phone: '(619) 555-0178', email: 'noah.carter@locauto.com', idNumber: 'DL-553210', rentals: 5, lastRental: '2024-03-30', status: 'Blacklisted', avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1009', name: 'Isabella Stone', phone: '(619) 555-0130', email: 'isabella.stone@locauto.com', idNumber: 'DL-774129', rentals: 20, lastRental: '2024-04-22', status: 'VIP', avatar: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1010', name: 'Lucas Knight', phone: '(619) 555-0152', email: 'lucas.knight@locauto.com', idNumber: 'DL-665341', rentals: 8, lastRental: '2024-04-14', status: 'Active', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1011', name: 'Chloe Reed', phone: '(619) 555-0161', email: 'chloe.reed@locauto.com', idNumber: 'DL-548810', rentals: 17, lastRental: '2024-04-19', status: 'Active', avatar: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1012', name: 'Aiden Ross', phone: '(619) 555-0127', email: 'aiden.ross@locauto.com', idNumber: 'DL-773225', rentals: 11, lastRental: '2024-04-16', status: 'Active', avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1013', name: 'Ella Hayes', phone: '(619) 555-0148', email: 'ella.hayes@locauto.com', idNumber: 'DL-227811', rentals: 12, lastRental: '2024-04-18', status: 'Active', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1014', name: 'James Park', phone: '(619) 555-0113', email: 'james.park@locauto.com', idNumber: 'DL-330912', rentals: 4, lastRental: '2024-03-28', status: 'Active', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1015', name: 'Luna Gray', phone: '(619) 555-0185', email: 'luna.gray@locauto.com', idNumber: 'DL-112233', rentals: 16, lastRental: '2024-04-20', status: 'VIP', avatar: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1016', name: 'Oliver Shaw', phone: '(619) 555-0175', email: 'oliver.shaw@locauto.com', idNumber: 'DL-667342', rentals: 7, lastRental: '2024-04-11', status: 'Active', avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1017', name: 'Harper Cole', phone: '(619) 555-0123', email: 'harper.cole@locauto.com', idNumber: 'DL-112704', rentals: 19, lastRental: '2024-04-22', status: 'VIP', avatar: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1018', name: 'Mason Cruz', phone: '(619) 555-0180', email: 'mason.cruz@locauto.com', idNumber: 'DL-448199', rentals: 10, lastRental: '2024-04-13', status: 'Active', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1019', name: 'Zoe Lane', phone: '(619) 555-0169', email: 'zoe.lane@locauto.com', idNumber: 'DL-880122', rentals: 15, lastRental: '2024-04-20', status: 'Active', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1020', name: 'Julian West', phone: '(619) 555-0194', email: 'julian.west@locauto.com', idNumber: 'DL-119200', rentals: 6, lastRental: '2024-04-09', status: 'Active', avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1021', name: 'Nora Hale', phone: '(619) 555-0110', email: 'nora.hale@locauto.com', idNumber: 'DL-554731', rentals: 8, lastRental: '2024-04-12', status: 'Blacklisted', avatar: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1022', name: 'Henry Lowe', phone: '(619) 555-0170', email: 'henry.lowe@locauto.com', idNumber: 'DL-111220', rentals: 11, lastRental: '2024-04-16', status: 'Active', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1023', name: 'Aria Wong', phone: '(619) 555-0156', email: 'aria.wong@locauto.com', idNumber: 'DL-333122', rentals: 10, lastRental: '2024-04-18', status: 'Active', avatar: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1024', name: 'Leo Nash', phone: '(619) 555-0137', email: 'leo.nash@locauto.com', idNumber: 'DL-227411', rentals: 5, lastRental: '2024-03-25', status: 'Active', avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=80&q=60' },
+      { id: 'C-1025', name: 'Ruby Flynn', phone: '(619) 555-0145', email: 'ruby.flynn@locauto.com', idNumber: 'DL-772898', rentals: 13, lastRental: '2024-04-17', status: 'Active', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=80&q=60' }
+    ];
+
+    const agents = ['Mia Turner', 'Ethan Brooks', 'Noah Patel', 'Ava Morgan'];
+
+    const invoices = [
+      { number: 'INV-3001', client: 'Mia Turner', car: 'Model 3', amount: '$431', method: 'Card', date: '2024-04-20', status: 'Paid' },
+      { number: 'INV-3002', client: 'Ethan Brooks', car: 'Corolla', amount: '$216', method: 'Cash', date: '2024-04-19', status: 'Pending' },
+      { number: 'INV-3003', client: 'Sophia Reed', car: 'X5', amount: '$612', method: 'Transfer', date: '2024-04-18', status: 'Paid' },
+      { number: 'INV-3004', client: 'Noah Patel', car: 'Grand Cherokee', amount: '$487', method: 'Card', date: '2024-04-18', status: 'Overdue' },
+      { number: 'INV-3005', client: 'Ava Morgan', car: 'A6', amount: '$521', method: 'Card', date: '2024-04-17', status: 'Paid' }
+    ];
+
+    const reservations = [
+      { id: 'R-1001', client: 'Mia Turner', car: 'Model 3', start: '2024-04-20', end: '2024-04-25', duration: '5 days', total: '$640', status: 'Active', agent: 'Mia Turner' },
+      { id: 'R-1002', client: 'Ethan Brooks', car: 'Corolla', start: '2024-04-18', end: '2024-04-21', duration: '3 days', total: '$144', status: 'Completed', agent: 'Ethan Brooks' },
+      { id: 'R-1003', client: 'Sophia Reed', car: 'X5', start: '2024-04-22', end: '2024-04-27', duration: '5 days', total: '$725', status: 'Confirmed', agent: 'Noah Patel' },
+      { id: 'R-1004', client: 'Noah Patel', car: 'Grand Cherokee', start: '2024-04-19', end: '2024-04-22', duration: '3 days', total: '$294', status: 'Completed', agent: 'Ava Morgan' },
+      { id: 'R-1005', client: 'Ava Morgan', car: 'A6', start: '2024-04-23', end: '2024-04-26', duration: '3 days', total: '$396', status: 'Pending', agent: 'Mia Turner' },
+      { id: 'R-1006', client: 'Liam Chen', car: 'Camry', start: '2024-04-21', end: '2024-04-23', duration: '2 days', total: '$110', status: 'Confirmed', agent: 'Ethan Brooks' },
+      { id: 'R-1007', client: 'Emma Davis', car: 'Civic', start: '2024-04-20', end: '2024-04-24', duration: '4 days', total: '$200', status: 'Active', agent: 'Ava Morgan' },
+      { id: 'R-1008', client: 'Isabella Stone', car: 'A6', start: '2024-04-24', end: '2024-04-27', duration: '3 days', total: '$396', status: 'Reserved', agent: 'Noah Patel' },
+      { id: 'R-1009', client: 'Lucas Knight', car: 'Escape', start: '2024-04-19', end: '2024-04-22', duration: '3 days', total: '$285', status: 'Cancelled', agent: 'Ethan Brooks' },
+      { id: 'R-1010', client: 'Chloe Reed', car: 'Q5', start: '2024-04-20', end: '2024-04-25', duration: '5 days', total: '$690', status: 'Active', agent: 'Mia Turner' },
+      { id: 'R-1011', client: 'Aiden Ross', car: 'Corolla', start: '2024-04-18', end: '2024-04-20', duration: '2 days', total: '$96', status: 'Completed', agent: 'Ava Morgan' },
+      { id: 'R-1012', client: 'Ella Hayes', car: 'Kona', start: '2024-04-21', end: '2024-04-24', duration: '3 days', total: '$147', status: 'Confirmed', agent: 'Ava Morgan' },
+      { id: 'R-1013', client: 'James Park', car: 'Sienna', start: '2024-04-23', end: '2024-04-26', duration: '3 days', total: '$264', status: 'Pending', agent: 'Noah Patel' },
+      { id: 'R-1014', client: 'Luna Gray', car: 'Vito', start: '2024-04-19', end: '2024-04-22', duration: '3 days', total: '$306', status: 'Active', agent: 'Mia Turner' },
+      { id: 'R-1015', client: 'Oliver Shaw', car: 'Escape', start: '2024-04-20', end: '2024-04-24', duration: '4 days', total: '$380', status: 'Confirmed', agent: 'Ethan Brooks' },
+      { id: 'R-1016', client: 'Harper Cole', car: 'Model 3', start: '2024-04-21', end: '2024-04-26', duration: '5 days', total: '$640', status: 'Reserved', agent: 'Noah Patel' },
+      { id: 'R-1017', client: 'Mason Cruz', car: 'Corolla', start: '2024-04-22', end: '2024-04-25', duration: '3 days', total: '$144', status: 'Active', agent: 'Ava Morgan' },
+      { id: 'R-1018', client: 'Zoe Lane', car: 'Camry', start: '2024-04-18', end: '2024-04-21', duration: '3 days', total: '$165', status: 'Completed', agent: 'Mia Turner' },
+      { id: 'R-1019', client: 'Julian West', car: 'Civic', start: '2024-04-20', end: '2024-04-22', duration: '2 days', total: '$100', status: 'Confirmed', agent: 'Ethan Brooks' },
+      { id: 'R-1020', client: 'Nora Hale', car: 'Kona', start: '2024-04-23', end: '2024-04-25', duration: '2 days', total: '$98', status: 'Cancelled', agent: 'Noah Patel' }
+    ];
+
+    const reportData = {
+      revenue: [8200, 9200, 10400, 9600, 11200, 11800, 12500, 13200, 14000, 13800, 14500, 15200, 16000, 16800, 17400, 17800, 18300, 19000, 19600, 20300, 21000, 21800, 22500, 23100, 23900, 24500, 25200, 25900, 26800, 27500],
+      dates: Array.from({ length: 30 }, (_, i) => {
+        const d = new Date(); d.setDate(d.getDate() - (29 - i));
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }),
+      categories: ['Economy', 'SUV', 'Luxury', 'Van'],
+      availability: [6, 4, 3, 2],
+      topCars: [ { car: 'Model 3', count: 35 }, { car: 'Corolla', count: 29 }, { car: 'X5', count: 24 }, { car: 'A6', count: 19 }, { car: 'Grand Cherokee', count: 16 } ],
+      paymentMethods: ['Cash', 'Card', 'Transfer'],
+      paymentValues: [32, 48, 20],
+      agents: [ { name: 'Mia Turner', bookings: 46, revenue: '$18.2k', rating: '4.9' }, { name: 'Ethan Brooks', bookings: 32, revenue: '$12.7k', rating: '4.7' }, { name: 'Ava Morgan', bookings: 28, revenue: '$10.8k', rating: '4.6' }, { name: 'Noah Patel', bookings: 24, revenue: '$9.5k', rating: '4.5' } ]
+    };
+
+    const stateHelpers = {
+      sortArray(arr, key, dir) {
+        return [...arr].sort((a,b) => {
+          const left = (a[key] || '').toString().toLowerCase();
+          const right = (b[key] || '').toString().toLowerCase();
+          if (!isNaN(parseFloat(left)) && !isNaN(parseFloat(right)) && left !== '' && right !== '') {
+            return dir === 'asc' ? left - right : right - left;
+          }
+          return dir === 'asc' ? (left > right ? 1 : -1) : (left < right ? 1 : -1);
+        });
+      },
+      paginate(arr, page, perPage) {
+        const start = (page - 1) * perPage;
+        return arr.slice(start, start + perPage);
+      }
+    };
+
+    function getBadge(status) {
+      const mapping = {
+        Available: 'status-available', Rented: 'status-rented', Maintenance: 'status-maintenance', Reserved: 'status-reserved', Pending: 'status-pending', Confirmed: 'status-confirmed', Active: 'status-active', Completed: 'status-completed', Cancelled: 'status-cancelled'
+      };
+      return mapping[status] || 'status-pending';
+    }
+
+    function setActiveView(view) {
+      state.activeView = view;
+      document.querySelectorAll('.page-content').forEach(section => section.classList.add('hidden'));
+      document.getElementById(`${view}Page`).classList.remove('hidden');
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.toggle('active', item.dataset.view === view));
+    }
+
+    function toast(message, type='success') {
+      const container = document.getElementById('toastContainer');
+      const toastEl = document.createElement('div');
+      toastEl.className = `toast ${type}`;
+      toastEl.innerHTML = `<strong>${type === 'success' ? 'Success' : 'Error'}</strong><span>${message}</span>`;
+      container.appendChild(toastEl);
+      setTimeout(() => toastEl.remove(), 3200);
+    }
+
+    function formatCurrency(value) {
+      return typeof value === 'number' ? `$${value.toFixed(2)}` : value;
+    }
+
+    function renderDashboardCards() {
+      document.getElementById('totalCars').textContent = cars.length;
+      document.getElementById('activeRentals').textContent = reservations.filter(r => r.status === 'Active').length;
+      const monthRevenue = reportData.revenue.slice(-30).reduce((a,b) => a + b, 0) / 30;
+      document.getElementById('monthlyRevenue').textContent = `$${monthRevenue.toLocaleString(undefined,{maximumFractionDigits:0})}`;
+      document.getElementById('pendingReturns').textContent = reservations.filter(r => r.status === 'Active').length;
+      const recentReservations = reservations.slice(0, 5);
+      document.getElementById('recentReservationsBody').innerHTML = recentReservations.map(r => `
+        <tr><td>${r.id}</td><td>${r.client}</td><td>${r.car}</td><td>${r.duration}</td><td>${r.start}</td><td class="status-pill ${getBadge(r.status)}">${r.status}</td><td>${r.total}</td></tr>
+      `).join('');
+    }
+
+    function renderFleet() {
+      const category = document.getElementById('fleetCategory').value;
+      const status = document.getElementById('fleetStatus').value;
+      const query = document.getElementById('fleetSearch').value.trim().toLowerCase();
+      let list = cars.filter(car => {
+        const matchesCategory = category === 'all' || car.category === category;
+        const matchesStatus = status === 'all' || car.status === status;
+        const matchesQuery = !query || car.model.toLowerCase().includes(query) || car.plate.toLowerCase().includes(query);
+        return matchesCategory && matchesStatus && matchesQuery;
+      });
+      list = stateHelpers.sortArray(list, state.fleetPage.sortKey, state.fleetPage.sortDir);
+      const pageCount = Math.ceil(list.length / state.fleetPage.perPage) || 1;
+      state.fleetPage.page = Math.min(state.fleetPage.page, pageCount);
+      const pageItems = stateHelpers.paginate(list, state.fleetPage.page, state.fleetPage.perPage);
+      document.getElementById('fleetBody').innerHTML = pageItems.map(car => `
+        <tr>
+          <td>#${car.id}</td>
+          <td><div style="width: 72px; height: 48px; border-radius: 18px; background: linear-gradient(135deg, #f8fafc, ${car.color}); display:flex; align-items:center; justify-content:center; color:#0f172a; font-weight:700;">${car.brand.charAt(0)}</div></td>
+          <td>${car.model}</td>
+          <td>${car.brand}</td>
+          <td>${car.year}</td>
+          <td>${car.category}</td>
+          <td>${car.plate}</td>
+          <td><span class="status-pill ${getBadge(car.status)}">${car.status}</span></td>
+          <td>${formatCurrency(car.price)}</td>
+          <td><button class="icon-btn" data-action="edit-car" data-id="${car.id}">Edit</button></td>
+        </tr>`).join('');
+      document.getElementById('fleetPagination').textContent = `Page ${state.fleetPage.page} of ${pageCount}`;
+    }
+
+    function renderReservations() {
+      const status = document.getElementById('resStatus').value;
+      const agent = document.getElementById('resAgent').value;
+      const query = document.getElementById('resSearch').value.trim().toLowerCase();
+      let list = reservations.filter(res => {
+        const matchesStatus = status === 'all' || res.status === status;
+        const matchesAgent = agent === 'all' || res.agent === agent;
+        const matchesQuery = !query || res.client.toLowerCase().includes(query) || res.car.toLowerCase().includes(query);
+        return matchesStatus && matchesAgent && matchesQuery;
+      });
+      list = stateHelpers.sortArray(list, state.reservationsPage.sortKey, state.reservationsPage.sortDir);
+      const pageCount = Math.ceil(list.length / state.reservationsPage.perPage) || 1;
+      state.reservationsPage.page = Math.min(state.reservationsPage.page, pageCount);
+      const pageItems = stateHelpers.paginate(list, state.reservationsPage.page, state.reservationsPage.perPage);
+      document.getElementById('reservationsBody').innerHTML = pageItems.map(r => `
+        <tr>
+          <td>${r.id}</td><td>${r.client}</td><td>${r.car}</td><td>${r.duration}</td><td>${r.start}</td><td>${r.end}</td><td><span class="status-pill ${getBadge(r.status)}">${r.status}</span></td><td>${r.total}</td><td>${r.agent}</td><td><button class="icon-btn" data-action="edit-reservation" data-id="${r.id}">Edit</button></td>
+        </tr>`).join('');
+      document.getElementById('reservationsPagination').textContent = `Page ${state.reservationsPage.page} of ${pageCount}`;
+    }
+
+    function renderClients() {
+      const status = document.getElementById('clientStatus').value;
+      const query = document.getElementById('clientSearch').value.trim().toLowerCase();
+      let list = clients.filter(client => {
+        const matchesStatus = status === 'all' || client.status === status;
+        const matchesQuery = !query || client.name.toLowerCase().includes(query) || client.email.toLowerCase().includes(query) || client.idNumber.toLowerCase().includes(query);
+        return matchesStatus && matchesQuery;
+      });
+      list = stateHelpers.sortArray(list, state.clientsPage.sortKey, state.clientsPage.sortDir);
+      const pageCount = Math.ceil(list.length / state.clientsPage.perPage) || 1;
+      state.clientsPage.page = Math.min(state.clientsPage.page, pageCount);
+      const pageItems = stateHelpers.paginate(list, state.clientsPage.page, state.clientsPage.perPage);
+      document.getElementById('clientsBody').innerHTML = pageItems.map(c => `
+        <tr><td style="display:flex;align-items:center;gap:12px;"><img class="avatar" src="${c.avatar}" alt="${c.name}" /><div><strong>${c.name}</strong></div></td><td>${c.phone}</td><td>${c.email}</td><td>${c.idNumber}</td><td>${c.rentals}</td><td>${c.lastRental}</td><td><span class="status-pill ${getBadge(c.status)}">${c.status}</span></td><td><button class="icon-btn" data-action="view-client" data-id="${c.id}">View</button></td></tr>`).join('');
+      document.getElementById('clientsPagination').textContent = `Page ${state.clientsPage.page} of ${pageCount}`;
+    }
+
+    function renderPayments() {
+      document.getElementById('invoicesBody').innerHTML = invoices.map(inv => `
+        <tr><td>${inv.number}</td><td>${inv.client}</td><td>${inv.car}</td><td>${inv.amount}</td><td>${inv.method}</td><td>${inv.date}</td><td><span class="status-pill ${inv.status==='Paid' ? 'status-available' : inv.status==='Pending' ? 'status-pending' : 'status-maintenance'}">${inv.status}</span></td></tr>`).join('');
+    }
+
+    function renderReports() {
+      document.getElementById('agentsBody').innerHTML = reportData.agents.map(agent => `
+        <tr><td>${agent.name}</td><td>${agent.bookings}</td><td>${agent.revenue}</td><td>${agent.rating}</td></tr>`).join('');
+    }
+
+    function getReservationMapForMonth(baseDate) {
+      const result = {};
+      const year = baseDate.getFullYear();
+      const month = baseDate.getMonth();
+      const monthStart = new Date(year, month, 1);
+      const monthEnd = new Date(year, month + 1, 0);
+      reservations.forEach(reservation => {
+        const start = new Date(reservation.start);
+        const end = new Date(reservation.end);
+        let current = new Date(Math.max(start, monthStart));
+        while (current <= end && current <= monthEnd) {
+          const key = current.toISOString().slice(0, 10);
+          if (!result[key]) result[key] = [];
+          result[key].push(reservation);
+          current.setDate(current.getDate() + 1);
+        }
+      });
+      return result;
+    }
+
+    function renderCalendar() {
+      const current = state.calendar.currentMonth;
+      const year = current.getFullYear();
+      const month = current.getMonth();
+      const startOfMonth = new Date(year, month, 1);
+      const endOfMonth = new Date(year, month + 1, 0);
+      const firstWeekday = startOfMonth.getDay();
+      const totalDays = endOfMonth.getDate();
+      const reservationMap = getReservationMapForMonth(startOfMonth);
+      const calendarGrid = document.getElementById('calendarGrid');
+      const title = document.getElementById('calendarTitle');
+      title.textContent = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(current);
+      const cells = [];
+      for (let i = 0; i < firstWeekday; i += 1) {
+        cells.push(`<div class="calendar-day disabled"></div>`);
+      }
+      for (let day = 1; day <= totalDays; day += 1) {
+        const date = new Date(year, month, day);
+        const dateKey = date.toISOString().slice(0, 10);
+        const events = reservationMap[dateKey] || [];
+        const eventCount = events.length;
+        const pill = eventCount > 0 ? `<span class="event-pill">${eventCount} reservation${eventCount > 1 ? 's' : ''}</span>` : '';
+        const dayClass = eventCount > 0 ? 'calendar-day has-event' : 'calendar-day';
+        cells.push(`
+          <div class="${dayClass}">
+            <div class="day-number">${day}</div>
+            ${pill}
+          </div>
+        `);
+      }
+      calendarGrid.innerHTML = cells.join('');
+      const totalReservations = Object.values(reservationMap).reduce((sum, entries) => sum + entries.length, 0);
+      document.getElementById('calendarSummary').textContent = `${totalReservations} booked day${totalReservations === 1 ? '' : 's'} this month. Slide through months to compare reservation density.`;
+    }
+
+    function changeCalendarMonth(offset) {
+      const current = new Date(state.calendar.currentMonth);
+      current.setMonth(current.getMonth() + offset);
+      state.calendar.currentMonth = current;
+      renderCalendar();
+    }
+
+    function populateAgentFilter() {
+      const agentSelect = document.getElementById('resAgent');
+      agentSelect.innerHTML = '<option value="all">All Agents</option>' + agents.map(agent => `<option>${agent}</option>`).join('');
+    }
+
+    function createChart(id, type, data, options) {
+      const canvas = document.getElementById(id);
+      return new Chart(canvas, { type, data, options });
+    }
+
+    let revenueChart, availabilityChart, paymentChart, reportsChart, topCarsChart;
+    function initializeCharts() {
+      if (revenueChart) revenueChart.destroy();
+      revenueChart = createChart('revenueChart', 'line', {
+        labels: reportData.dates,
+        datasets: [{ label: 'Revenue', data: reportData.revenue, borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.12)', fill: true, tension: 0.35, pointRadius: 0 }]
+      }, { responsive: true, plugins: { legend: { display: false }} , scales: { x: { display: false }, y: { ticks: { color: '#64748b' }, grid: { color: '#e2e8f0' }}}});
+      if (availabilityChart) availabilityChart.destroy();
+      availabilityChart = createChart('availabilityChart', 'doughnut', {
+        labels: reportData.categories,
+        datasets: [{ data: reportData.availability, backgroundColor: ['#2563eb','#1e40af','#f59e0b','#ef4444'] }]
+      }, { responsive: true, plugins: { legend: { display: false }} });
+      if (paymentChart) paymentChart.destroy();
+      paymentChart = createChart('paymentChart', 'bar', {
+        labels: reportData.paymentMethods,
+        datasets: [{ data: reportData.paymentValues, backgroundColor: ['#2563eb','#60a5fa','#22c55e'] }]
+      }, { responsive: true, plugins: { legend: { display: false }}, scales: { y: { beginAtZero: true, ticks: { color: '#64748b' }, grid:{ color:'#e2e8f0'}}, x: { ticks: { color: '#64748b' }, grid:{ display:false }}}});
+      if (reportsChart) reportsChart.destroy();
+      reportsChart = createChart('reportsChart', 'bar', {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [{ label:'Revenue', data:[85000,92000,98000,105000,112000,118000], backgroundColor:'#2563eb' }]
+      }, { responsive: true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ color:'#64748b' }, grid:{ color:'#e2e8f0'}}, x:{ ticks:{ color:'#64748b' }, grid:{ display:false }}}});
+      if (topCarsChart) topCarsChart.destroy();
+      topCarsChart = createChart('topCarsChart', 'bar', {
+        labels: reportData.topCars.map(t => t.car),
+        datasets: [{ label:'Bookings', data: reportData.topCars.map(t => t.count), backgroundColor:'#2563eb' }]
+      }, { indexAxis:'y', responsive:true, plugins:{ legend:{ display:false }}, scales:{ x:{ beginAtZero:true, ticks:{ color:'#64748b'}, grid:{ color:'#e2e8f0'}}, y:{ ticks:{ color:'#64748b'}, grid:{ display:false}}}});
+    }
+
+    function openModal(contentHtml) {
+      document.getElementById('modalContent').innerHTML = contentHtml;
+      document.getElementById('pageOverlay').classList.add('show');
+      const modal = document.getElementById('modalDialog');
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      document.getElementById('pageOverlay').classList.remove('show');
+      const modal = document.getElementById('modalDialog');
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    function openDrawer(contentHtml) {
+      document.getElementById('drawerContent').innerHTML = contentHtml;
+      document.getElementById('pageOverlay').classList.add('show');
+      const drawer = document.getElementById('profileDrawer');
+      drawer.classList.add('show');
+      drawer.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeDrawer() {
+      document.getElementById('pageOverlay').classList.remove('show');
+      const drawer = document.getElementById('profileDrawer');
+      drawer.classList.remove('show');
+      drawer.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    function persistDarkMode() {
+      if (state.darkMode) {
+        document.documentElement.style.setProperty('--bg', '#020617');
+        document.body.style.background = '#07101f';
+        document.querySelector('.main').style.background = '#0f172a';
+        document.querySelectorAll('.card, .small-card, .modal-panel, .drawer-panel').forEach(el => { el.style.background = '#111c33'; el.style.borderColor = 'rgba(255,255,255,0.08)'; });
+        document.querySelectorAll('th, td, label, p, h1, h2, h3, span').forEach(el => el.style.color = '#e2e8f0');
+      } else {
+        document.documentElement.style.removeProperty('--bg');
+        document.body.style.background = 'radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 28%), #e2e8f0';
+        document.querySelector('.main').style.background = 'var(--bg)';
+        document.querySelectorAll('.card, .small-card, .modal-panel, .drawer-panel').forEach(el => { el.style.background = ''; el.style.borderColor = ''; });
+        document.querySelectorAll('th, td, label, p, h1, h2, h3, span').forEach(el => el.style.color = '');
+      }
+      localStorage.setItem('locAutoDarkMode', state.darkMode ? '1' : '0');
+    }
+
+    function handleAction(event) {
+      const action = event.target.dataset.action;
+      if (!action) return;
+      if (action === 'add-car') {
+        openModal(`
+          <h2 id="modalTitle" style="margin-top:0;font-size:1.45rem;">Add New Car</h2>
+          <div class="form-grid"><div class="form-group"><label>Model</label><input type="text" id="newCarModel" placeholder="e.g. Corolla"></div><div class="form-group"><label>Brand</label><input type="text" id="newCarBrand" placeholder="e.g. Toyota"></div><div class="form-group"><label>Year</label><input type="number" id="newCarYear" value="2024"></div><div class="form-group"><label>Category</label><select id="newCarCategory"><option>Economy</option><option>SUV</option><option>Luxury</option><option>Van</option></select></div><div class="form-group"><label>License Plate</label><input id="newCarPlate" placeholder="LOC-XXXX"></div><div class="form-group"><label>Price per Day</label><input type="number" id="newCarPrice" value="65"></div><div class="form-group" style="grid-column: span 2;"><label>Status</label><select id="newCarStatus"><option>Available</option><option>Rented</option><option>Maintenance</option><option>Reserved</option></select></div></div>
+          <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:20px;"><button class="outline-btn" id="cancelCar">Cancel</button><button class="control-btn" id="saveCar">Save Car</button></div>`);
+        document.getElementById('cancelCar').addEventListener('click', closeModal);
+        document.getElementById('saveCar').addEventListener('click', () => {
+          const model = document.getElementById('newCarModel').value.trim();
+          const brand = document.getElementById('newCarBrand').value.trim();
+          const year = parseInt(document.getElementById('newCarYear').value, 10);
+          const category = document.getElementById('newCarCategory').value;
+          const plate = document.getElementById('newCarPlate').value.trim();
+          const price = parseFloat(document.getElementById('newCarPrice').value);
+          const status = document.getElementById('newCarStatus').value;
+          if (!model || !brand || !year || !plate || !price) return toast('Please complete all car fields.', 'error');
+          cars.push({ id: Math.max(...cars.map(c=>c.id))+1, model, brand, year, category, plate, status, price, color: '#2563eb' });
+          closeModal(); renderFleet(); renderDashboardCards(); toast('Car added to fleet successfully.');
+        });
+      }
+      if (action === 'new-reservation') {
+        openModal(`
+          <h2 id="modalTitle" style="margin-top:0;font-size:1.45rem;">Create Reservation</h2>
+          <div class="form-grid"><div class="form-group"><label>Client Name</label><input type="text" id="resClient"></div><div class="form-group"><label>Car</label><input id="resCar"></div><div class="form-group"><label>Start Date</label><input type="date" id="resStart"></div><div class="form-group"><label>End Date</label><input type="date" id="resEnd"></div><div class="form-group"><label>Agent</label><select id="resAgentSelect">${agents.map(a => `<option>${a}</option>`).join('')}</select></div><div class="form-group" style="grid-column: span 2;"><label>Status</label><select id="resStatusSelect"><option>Pending</option><option>Confirmed</option><option>Active</option><option>Completed</option><option>Cancelled</option></select></div></div>
+          <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:20px;"><button class="outline-btn" id="cancelRes">Cancel</button><button class="control-btn" id="saveRes">Save Reservation</button></div>`);
+        document.getElementById('cancelRes').addEventListener('click', closeModal);
+        document.getElementById('saveRes').addEventListener('click', () => {
+          const client = document.getElementById('resClient').value.trim();
+          const carStr = document.getElementById('resCar').value.trim();
+          const start = document.getElementById('resStart').value;
+          const end = document.getElementById('resEnd').value;
+          const agentName = document.getElementById('resAgentSelect').value;
+          const statusValue = document.getElementById('resStatusSelect').value;
+          if (!client || !carStr || !start || !end) return toast('Please complete all reservation fields.', 'error');
+          const startDate = new Date(start), endDate = new Date(end);
+          if (endDate < startDate) return toast('End date must be after start date.', 'error');
+          const duration = Math.round((endDate - startDate)/(1000*60*60*24)) + 1;
+          const total = `$${(duration * 75).toFixed(0)}`;
+          reservations.unshift({ id: `R-${1000 + reservations.length + 1}`, client, car: carStr, start, end, duration: `${duration} days`, total, status: statusValue, agent: agentName });
+          closeModal(); renderReservations(); renderDashboardCards(); toast('Reservation created successfully.');
+        });
+      }
+      if (action === 'generate-report') { toast('Report generated successfully.', 'success'); }
+      if (action === 'export-pdf') { toast('Invoice report prepared for export.', 'success'); }
+      if (action === 'export-report') { toast('Analytics report prepared for export.', 'success'); }
+    }
+
+    function editCar(carId) {
+      const car = cars.find(c => c.id === parseInt(carId, 10));
+      if (!car) return;
+      openModal(`
+          <h2 id="modalTitle" style="margin-top:0;font-size:1.45rem;">Edit Car ${car.model}</h2>
+          <div class="form-grid"><div class="form-group"><label>Model</label><input type="text" id="editCarModel" value="${car.model}"></div><div class="form-group"><label>Brand</label><input type="text" id="editCarBrand" value="${car.brand}"></div><div class="form-group"><label>Year</label><input type="number" id="editCarYear" value="${car.year}"></div><div class="form-group"><label>Category</label><select id="editCarCategory"><option ${car.category==='Economy'?'selected':''}>Economy</option><option ${car.category==='SUV'?'selected':''}>SUV</option><option ${car.category==='Luxury'?'selected':''}>Luxury</option><option ${car.category==='Van'?'selected':''}>Van</option></select></div><div class="form-group"><label>License Plate</label><input id="editCarPlate" value="${car.plate}"></div><div class="form-group"><label>Price per Day</label><input type="number" id="editCarPrice" value="${car.price}"></div><div class="form-group" style="grid-column: span 2;"><label>Status</label><select id="editCarStatus"><option ${car.status==='Available'?'selected':''}>Available</option><option ${car.status==='Rented'?'selected':''}>Rented</option><option ${car.status==='Maintenance'?'selected':''}>Maintenance</option><option ${car.status==='Reserved'?'selected':''}>Reserved</option></select></div></div>
+          <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:20px;"><button class="outline-btn" id="cancelEditCar">Cancel</button><button class="control-btn" id="saveEditCar">Update Car</button></div>`);
+      document.getElementById('cancelEditCar').addEventListener('click', closeModal);
+      document.getElementById('saveEditCar').addEventListener('click', () => {
+        car.model = document.getElementById('editCarModel').value.trim();
+        car.brand = document.getElementById('editCarBrand').value.trim();
+        car.year = parseInt(document.getElementById('editCarYear').value, 10);
+        car.category = document.getElementById('editCarCategory').value;
+        car.plate = document.getElementById('editCarPlate').value.trim();
+        car.price = parseFloat(document.getElementById('editCarPrice').value);
+        car.status = document.getElementById('editCarStatus').value;
+        closeModal(); renderFleet(); toast('Car updated successfully.');
+      });
+    }
+
+    function editReservation(id) {
+      const reservation = reservations.find(r => r.id === id);
+      if (!reservation) return;
+      openModal(`
+          <h2 id="modalTitle" style="margin-top:0;font-size:1.45rem;">Edit Reservation ${reservation.id}</h2>
+          <div class="form-grid"><div class="form-group"><label>Client</label><input type="text" id="editResClient" value="${reservation.client}"></div><div class="form-group"><label>Car</label><input id="editResCar" value="${reservation.car}"></div><div class="form-group"><label>Start</label><input type="date" id="editResStart" value="${reservation.start}"></div><div class="form-group"><label>End</label><input type="date" id="editResEnd" value="${reservation.end}"></div><div class="form-group"><label>Agent</label><select id="editResAgent">${agents.map(a => `<option ${reservation.agent===a?'selected':''}>${a}</option>`).join('')}</select></div><div class="form-group" style="grid-column: span 2;"><label>Status</label><select id="editResStatus"><option ${reservation.status==='Pending'?'selected':''}>Pending</option><option ${reservation.status==='Confirmed'?'selected':''}>Confirmed</option><option ${reservation.status==='Active'?'selected':''}>Active</option><option ${reservation.status==='Completed'?'selected':''}>Completed</option><option ${reservation.status==='Cancelled'?'selected':''}>Cancelled</option></select></div></div>
+          <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:20px;"><button class="outline-btn" id="cancelEditRes">Cancel</button><button class="control-btn" id="saveEditRes">Update Reservation</button></div>`);
+      document.getElementById('cancelEditRes').addEventListener('click', closeModal);
+      document.getElementById('saveEditRes').addEventListener('click', () => {
+        reservation.client = document.getElementById('editResClient').value.trim();
+        reservation.car = document.getElementById('editResCar').value.trim();
+        reservation.start = document.getElementById('editResStart').value;
+        reservation.end = document.getElementById('editResEnd').value;
+        reservation.agent = document.getElementById('editResAgent').value;
+        reservation.status = document.getElementById('editResStatus').value;
+        const startDate = new Date(reservation.start); const endDate = new Date(reservation.end);
+        reservation.duration = `${Math.round((endDate-startDate)/(1000*60*60*24))+1} days`;
+        reservation.total = `$${(parseFloat(reservation.total.replace('$','')) || 100).toFixed(0)}`;
+        closeModal(); renderReservations(); toast('Reservation updated successfully.');
+      });
+    }
+
+    function viewClient(id) {
+      const client = clients.find(c => c.id === id);
+      if (!client) return;
+      openDrawer(`<div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;"><img src="${client.avatar}" alt="${client.name}" class="avatar" style="width:72px;height:72px;border-radius:20px;"/><div><h2 style="margin:0;font-size:1.55rem;">${client.name}</h2><p style="margin:4px 0 0;color:#64748b;">${client.email}</p></div></div><div class="form-grid full"><div class="form-group"><label>ID Number</label><input type="text" value="${client.idNumber}" disabled></div><div class="form-group"><label>Phone</label><input type="text" value="${client.phone}" disabled></div><div class="form-group"><label>Total Rentals</label><input type="text" value="${client.rentals}" disabled></div><div class="form-group"><label>Last Rental</label><input type="text" value="${client.lastRental}" disabled></div><div class="form-group"><label>Status</label><input type="text" value="${client.status}" disabled></div></div><div style="margin-top:24px;"><h3 style="margin-bottom:12px;">Notes</h3><p style="color:#475569;line-height:1.6;">This client has a strong rental history and excellent payment reliability. No issues reported in the last 12 months.</p></div>`);
+    }
+
+    function attachEvents() {
+      document.getElementById('navList').addEventListener('click', event => {
+        const item = event.target.closest('.nav-item');
+        if (!item) return;
+        setActiveView(item.dataset.view);
+      });
+      document.querySelectorAll('[data-action]').forEach(btn => btn.addEventListener('click', handleAction));
+      document.getElementById('modalClose').addEventListener('click', closeModal);
+      document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+      document.getElementById('pageOverlay').addEventListener('click', () => { closeModal(); closeDrawer(); });
+      document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeModal(); closeDrawer(); }});
+      document.getElementById('fleetCategory').addEventListener('change', renderFleet);
+      document.getElementById('fleetStatus').addEventListener('change', renderFleet);
+      document.getElementById('fleetSearch').addEventListener('input', () => { state.fleetPage.page = 1; renderFleet(); });
+      document.getElementById('fleetPrev').addEventListener('click', () => { state.fleetPage.page = Math.max(1, state.fleetPage.page - 1); renderFleet(); });
+      document.getElementById('fleetNext').addEventListener('click', () => { state.fleetPage.page += 1; renderFleet(); });
+      document.getElementById('resStatus').addEventListener('change', () => { state.reservationsPage.page = 1; renderReservations(); });
+      document.getElementById('resAgent').addEventListener('change', () => { state.reservationsPage.page = 1; renderReservations(); });
+      document.getElementById('resSearch').addEventListener('input', () => { state.reservationsPage.page = 1; renderReservations(); });
+      document.getElementById('reservationsPrev').addEventListener('click', () => { state.reservationsPage.page = Math.max(1, state.reservationsPage.page - 1); renderReservations(); });
+      document.getElementById('reservationsNext').addEventListener('click', () => { state.reservationsPage.page += 1; renderReservations(); });
+      document.getElementById('calendarPrev').addEventListener('click', () => changeCalendarMonth(-1));
+      document.getElementById('calendarNext').addEventListener('click', () => changeCalendarMonth(1));
+      const calendarButton = document.querySelector('[data-toggle="calendar"]');
+      if (calendarButton) {
+        calendarButton.addEventListener('click', () => {
+          document.getElementById('calendarCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
+      document.getElementById('clientStatus').addEventListener('change', () => { state.clientsPage.page = 1; renderClients(); });
+      document.getElementById('clientSearch').addEventListener('input', () => { state.clientsPage.page = 1; renderClients(); });
+      document.getElementById('clientsPrev').addEventListener('click', () => { state.clientsPage.page = Math.max(1, state.clientsPage.page - 1); renderClients(); });
+      document.getElementById('clientsNext').addEventListener('click', () => { state.clientsPage.page += 1; renderClients(); });
+      document.getElementById('darkModeToggle').addEventListener('click', () => { state.darkMode = !state.darkMode; persistDarkMode(); });
+      document.querySelectorAll('table').forEach(table => {
+        table.addEventListener('click', event => {
+          const target = event.target.closest('th');
+          if (!target || !target.dataset.sort) return;
+          const sortKey = target.dataset.sort;
+          const pageState = target.closest('#fleetPage') ? state.fleetPage : target.closest('#reservationsPage') ? state.reservationsPage : target.closest('#clientsPage') ? state.clientsPage : null;
+          if (!pageState) return;
+          pageState.sortDir = pageState.sortKey === sortKey ? (pageState.sortDir === 'asc' ? 'desc' : 'asc') : 'asc';
+          pageState.sortKey = sortKey;
+          if (pageState === state.fleetPage) renderFleet();
+          if (pageState === state.reservationsPage) renderReservations();
+          if (pageState === state.clientsPage) renderClients();
+        });
+      });
+      document.addEventListener('click', event => {
+        const editBtn = event.target.closest('[data-action="edit-car"]');
+        if (editBtn) editCar(editBtn.dataset.id);
+        const editResBtn = event.target.closest('[data-action="edit-reservation"]');
+        if (editResBtn) editReservation(editResBtn.dataset.id);
+        const clientBtn = event.target.closest('[data-action="view-client"]');
+        if (clientBtn) viewClient(clientBtn.dataset.id);
+      });
+    }
+
+    function initialize() {
+      const savedMode = localStorage.getItem('locAutoDarkMode');
+      state.darkMode = savedMode === '1';
+      persistDarkMode();
+      populateAgentFilter();
+      renderDashboardCards();
+      renderFleet();
+      renderReservations();
+      renderCalendar();
+      renderClients();
+      renderPayments();
+      renderReports();
+      initializeCharts();
+      attachEvents();
+    }
+
+    initialize();
+  </script>
+</body>
+</html>

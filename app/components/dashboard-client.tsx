@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
 import { type Reservation } from "@/lib/types";
-import { formatReservationDates } from "@/lib/utils";
+import { formatReservationDates, resolveImageUrl } from "@/lib/utils";
 import { useToast } from "./toast";
 
 type DashboardClientProps = {
@@ -17,11 +17,18 @@ type DashboardClientProps = {
 const statusStyles: Record<Reservation["status"], string> = {
   pending: "border-[#f59e0b33] bg-[#f59e0b15] text-[#f59e0b]",
   confirmed: "border-[#22c55e33] bg-[#22c55e15] text-[#22c55e]",
+  accepted: "border-[#22c55e33] bg-[#22c55e15] text-[#22c55e]",
   cancelled: "border-[#ef444433] bg-[#ef444415] text-[#ef4444]",
+  rejected: "border-[#ef444433] bg-[#ef444415] text-[#ef4444]",
 };
 
 function calculateDays(startDate: string, endDate: string) {
-  return Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  const diff = end.getTime() - start.getTime();
+  return Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
 }
 
 export default function DashboardClient({ userEmail, reservations: initialReservations }: DashboardClientProps) {
@@ -29,10 +36,18 @@ export default function DashboardClient({ userEmail, reservations: initialReserv
   const [reservations, setReservations] = useState(initialReservations);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
+  const normalizedStatus = (status: Reservation["status"]) => {
+    if (status === "confirmed") return "accepted";
+    return status;
+  };
+
   const stats = useMemo(() => ({
     total: reservations.length,
     pending: reservations.filter((reservation) => reservation.status === "pending").length,
-    confirmed: reservations.filter((reservation) => reservation.status === "confirmed").length,
+    accepted: reservations.filter(
+      (reservation) => reservation.status === "accepted" || reservation.status === "confirmed"
+    ).length,
+    rejected: reservations.filter((reservation) => reservation.status === "rejected").length,
     cancelled: reservations.filter((reservation) => reservation.status === "cancelled").length,
   }), [reservations]);
 
@@ -73,7 +88,8 @@ export default function DashboardClient({ userEmail, reservations: initialReserv
         {[
           ["Total", stats.total],
           ["Pending", stats.pending],
-          ["Confirmed", stats.confirmed],
+          ["Accepted", stats.accepted],
+          ["Rejected", stats.rejected],
           ["Cancelled", stats.cancelled],
         ].map(([label, value]) => (
           <div key={label as string} className="rounded-2xl border border-[#ffffff0f] bg-[#16161f] p-5 transition-colors hover:border-[#6c63ff33]">
@@ -111,7 +127,7 @@ export default function DashboardClient({ userEmail, reservations: initialReserv
                         <td className="px-6 py-4 text-sm text-[#a0a0b8]">{formatReservationDates(reservation.start_date, reservation.end_date)}</td>
                         <td className="px-6 py-4 text-sm text-[#a0a0b8]">{days} day{days === 1 ? "" : "s"}</td>
                         <td className="px-6 py-4 text-sm font-semibold text-[#6c63ff]">{total.toLocaleString("fr-DZ")} DA</td>
-                        <td className="px-6 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[reservation.status]}`}>{reservation.status}</span></td>
+                        <td className="px-6 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[reservation.status]}`}>{normalizedStatus(reservation.status)}</span></td>
                         <td className="px-6 py-4 text-sm">{reservation.license_file_url ? <a href={reservation.license_file_url} target="_blank" rel="noopener noreferrer" className="text-[#6c63ff] hover:underline">View →</a> : <span className="text-[#55556a]">—</span>}</td>
                         <td className="px-6 py-4 text-sm">
                           {reservation.status === "pending" ? (
@@ -143,7 +159,7 @@ export default function DashboardClient({ userEmail, reservations: initialReserv
                   <article key={reservation.id} className="rounded-2xl border border-[#ffffff0f] bg-[#16161f] p-5">
                     <div className="flex items-start gap-3">
                       {reservation.cars.image_url ? (
-                        <Image src={reservation.cars.image_url} alt={`${reservation.cars.brand} ${reservation.cars.model}`} width={40} height={40} className="h-10 w-10 rounded-lg object-cover" placeholder="blur" blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" />
+                        <Image src={resolveImageUrl(reservation.cars.image_url) ?? reservation.cars.image_url} alt={`${reservation.cars.brand} ${reservation.cars.model}`} width={40} height={40} className="h-10 w-10 rounded-lg object-cover" placeholder="blur" blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" />
                       ) : (
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1e1e2a] text-sm">🚗</div>
                       )}

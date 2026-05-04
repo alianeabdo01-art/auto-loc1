@@ -1,12 +1,15 @@
 import Link from "next/link";
+import HeroGallery from "@/app/components/hero-gallery";
 
 export const metadata = {
   title: "Auto-Loc — Premium Car Rental",
 };
 
-export default function Home() {
+export default async function Home() {
   return (
-    <section className="fade-up flex min-h-[calc(100vh-9rem)] flex-col justify-between py-10">
+    <main className="space-y-10 py-10">
+      <HeroGallery />
+      <section className="fade-up flex min-h-[calc(100vh-9rem)] flex-col justify-between">
       <div className="relative overflow-hidden rounded-2xl border border-[#ffffff0f] bg-[#111118] px-6 py-20 text-center sm:px-10">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_#6c63ff22_0%,_transparent_70%)]" />
         <div className="relative mx-auto max-w-3xl space-y-8">
@@ -15,11 +18,8 @@ export default function Home() {
           </span>
           <div className="space-y-3">
             <h1 className="text-5xl font-bold leading-[1.1] tracking-tight text-white sm:text-6xl">
-              Rent Smarter.
+              🚗 Auto-Loc
             </h1>
-            <h2 className="bg-gradient-to-r from-[#6c63ff] to-[#a78bfa] bg-clip-text text-5xl font-bold leading-[1.1] tracking-tight text-transparent sm:text-6xl">
-              Drive Better.
-            </h2>
           </div>
           <p className="mx-auto max-w-lg text-lg leading-relaxed text-[#a0a0b8]">
             Browse our premium fleet, book in minutes, and upload your license securely. No paperwork. No waiting.
@@ -60,5 +60,6 @@ export default function Home() {
         <p className="text-sm text-[#55556a]">© 2025 Auto-Loc. All rights reserved.</p>
       </footer>
     </section>
+  </main>
   );
 }
